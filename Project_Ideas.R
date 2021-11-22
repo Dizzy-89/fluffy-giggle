@@ -23,6 +23,8 @@ loan_df$Term <- ifelse(loan_df$Term == "Short Term", 1, 0)
 # Keeps only the number of years individuals have worked in their current job.
 loan_df$Years.in.current.job <- as.numeric(gsub("([0-9]+).*$", "\\1", loan_df$Years.in.current.job))
 loan_df$Years.in.current.job <- ifelse(loan_df$Years.in.current.job >= 5, 1, 0)
+# Changing <1 year Experience to 0:
+loan_df$Years.in.current.job[is.na(loan_df$Years.in.current.job)] <- 0
 
 # Editing NA values from Credit Score and Annual Income
 loan_df <- loan_df[!is.na(loan_df$Credit.Score), ]
@@ -30,9 +32,8 @@ loan_df <- loan_df[!is.na(loan_df$Credit.Score), ]
 # Removing loans with Credit Scores of over 850
 loan_df <- loan_df[!loan_df$Credit.Score > 850, ]
 
-# ===== REMOVE: TESTING PURPOSE ONLY =====
-# Restricting to a 1,000 data set
-loan_df <- loan_df[-c(1001:80000), ]
+# Removing loans with Current Amount of $99999999
+loan_df <- loan_df[!loan_df$Current.Loan.Amount == 99999999, ]
 
 # ===== Partitioning the Data =====
 train.index <- sample(c(1:dim(loan_df)[1]), dim(loan_df)[1] * 0.6)
