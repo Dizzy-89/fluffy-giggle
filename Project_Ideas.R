@@ -8,8 +8,8 @@ library(forecast)
 
 # ===== Configuring the Data =====
 # Loading Data set
-loan_df <- read.csv("loan_eligibility_copy.csv")
 
+loan_df <- read.csv("loan_eligibility_copy.csv",fileEncoding="UTF-8-BOM")
 # Sub-setting: Removing unneeded Categories
 loan_df <- subset(loan_df, select=-c(Loan.ID, Customer.ID, Purpose, Home.Ownership))
 
