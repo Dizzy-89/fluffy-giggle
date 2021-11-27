@@ -150,9 +150,10 @@ for(i in 1:15){
 }
 View(accuracy.df)
 # ===== Random Forest =====
+install.packages("randomForest")
 library(randomForest)
 ## random forest
-rf <- randomForest(as.factor() ~ ., data = train.df, ntree = 500, 
+rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 500, 
                    mtry = 4, nodesize = 5, importance = TRUE)
 
 varImpPlot(rf, type = 1)
