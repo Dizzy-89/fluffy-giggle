@@ -152,13 +152,12 @@ View(accuracy.df)
 # ===== Random Forest =====
 install.packages("randomForest")
 library(randomForest)
-## random forest
+#Fit random forest model
 rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 500, 
                    mtry = 4, nodesize = 5, importance = TRUE)
-
+#RF plot
 varImpPlot(rf, type = 1)
-summary(rf)
-rf$votes
-
+#Predict validation data
 rf.pred <- predict(rf, valid.df)
-confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Personal.Loan))
+#Generate confusion matrix
+confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Loan.Status))
