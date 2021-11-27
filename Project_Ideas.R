@@ -149,3 +149,15 @@ for(i in 1:15){
                                                 as.factor(valid.df$Term))$overall[1]
 }
 View(accuracy.df)
+# ===== Random Forest =====
+library(randomForest)
+## random forest
+rf <- randomForest(as.factor() ~ ., data = train.df, ntree = 500, 
+                   mtry = 4, nodesize = 5, importance = TRUE)
+
+varImpPlot(rf, type = 1)
+summary(rf)
+rf$votes
+
+rf.pred <- predict(rf, valid.df)
+confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Personal.Loan))
