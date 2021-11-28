@@ -156,7 +156,7 @@ library(randomForest)
 #Fit random forest model
 rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 1000, 
                    mtry = 2, nodesize = 5, importance = TRUE)
-#PLot Mean Decrease Accuracy
+#Plot Mean Decrease Accuracy
 varImpPlot(rf, type = 1)
 #Predict validation data
 rf.pred <- predict(rf, valid.df)
