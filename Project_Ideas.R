@@ -150,12 +150,13 @@ for(i in 1:15){
 }
 View(accuracy.df)
 # ===== Random Forest =====
-install.packages("randomForest")
+#install.packages("randomForest")
 library(randomForest)
+
 #Fit random forest model
-rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 500, 
-                   mtry = 4, nodesize = 5, importance = TRUE)
-#RF plot
+rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 1000, 
+                   mtry = 2, nodesize = 5, importance = TRUE)
+#PLot Mean Decrease Accuracy
 varImpPlot(rf, type = 1)
 #Predict validation data
 rf.pred <- predict(rf, valid.df)
