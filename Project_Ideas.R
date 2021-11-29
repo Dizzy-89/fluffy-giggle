@@ -4,66 +4,59 @@ rm(list = ls())
 # ===== Setting the Environment =====
 set.seed(1)
 options(scipen = 999, digits = 1)
+
 # Checking for required Libraries
 library(forecast)
 library(caret)
 library(e1071)
+library(jtools)
+library(neuralnet)
+library(NeuralNetTools)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(gmodels)
+library(randomForest)
+library(class)
 
 # Loading Data set
-loan_df <- read.csv("loan_eligibility_copy.csv", fileEncoding="UTF-8-BOM")
+loan_df <- read.csv("df1_loan.csv", fileEncoding="UTF-8-BOM")
 
-# ===== Exploring the variables =====
+# Exploring the variables
 summary(loan_df)
-
-unique(loan_df$Term)
-unique(loan_df$Years.in.current.job)
-unique(loan_df$Home.Ownership)
-unique(loan_df$Purpose)
 
 # ===== Configuring the Data =====
 # Sub-setting: Removing unneeded Categories
-loan_df <- subset(loan_df, select=-c(Loan.ID, Customer.ID, Purpose, Home.Ownership))
+loan_df <- subset(loan_df, select=-c(X, Loan_ID))
 
 # Converting Categorical Variables into Dummy Variables:
-# 1 = True; 0 = False
-loan_df$Loan.Status <- ifelse(loan_df$Loan.Status == "Fully Paid", 1, 0)
+# 1 = Male; 0 = Female
+loan_df$Gender <- ifelse(loan_df$Gender == "Male", 1, 0)
 
-# 1 = Short-Term; 0 = Long-Term
-loan_df$Term <- ifelse(loan_df$Term == "Short Term", 1, 0)
+# 1 = Married; 0 = Single
+loan_df$Married <- ifelse(loan_df$Married == "Yes", 1, 0)
 
-# Keeps only the number of years individuals have worked in their current job.
-loan_df$Years.in.current.job <- as.numeric(gsub("([0-9]+).*$", "\\1", loan_df$Years.in.current.job))
-# 1 = 5 or more years; 0 = Less than 5 years
-loan_df$Years.in.current.job <- ifelse(loan_df$Years.in.current.job >= 5, 1, 0)
-# Changing <1 year Experience to 0:
-loan_df$Years.in.current.job[is.na(loan_df$Years.in.current.job)] <- 0
+# 1 = Not Graduate; 0 = Graduate
+loan_df$Education <- ifelse(loan_df$Education >= "Not Graduate", 1, 0)
 
-# Changing Months since Last Delinquent
-# 1 = There was a Delinquent; 0 = There was not a Delinquent
-loan_df$Months.since.last.delinquent <- ifelse(loan_df$Months.since.last.delinquent >= 1, 1, 0)
-# Change NA (Missing) values to 0
-loan_df$Months.since.last.delinquent[is.na(loan_df$Months.since.last.delinquent)] <- 0
+# 1 = Self-Employed; 0 = Not Self-Employed
+loan_df$Self_Employed <- ifelse(loan_df$Self_Employed >= "Yes", 1, 0)
 
-# Changing Bankruptcies
-# 1 = There was a reported Bankruptcy; 0 = There was not a reported Bankruptcy
-loan_df$Bankruptcies <- ifelse(loan_df$Bankruptcies >= 1, 1, 0)
-# Change NA (Missing) values to 0
-loan_df$Bankruptcies[is.na(loan_df$Bankruptcies)] <- 0
+# 1 = Urban; 0 = Rural
+loan_df$Property_Area <- ifelse(loan_df$Property_Area >= "Urban", 1, 0)
 
-# Changing Tax Liens
-# 1 = There was a Tax Lien; 0 = There was not a Tax Lien
-loan_df$Tax.Liens <- ifelse(loan_df$Tax.Liens >= 1, 1, 0)
-# Change NA (Missing) values to 0
-loan_df$Tax.Liens[is.na(loan_df$Tax.Liens)] <- 0
+# 1 = Approved; 0 = Denied
+loan_df$Loan_Status <- ifelse(loan_df$Loan_Status >= "Y", 1, 0)
 
-# Editing NA values from Credit Score and Annual Income
-loan_df <- loan_df[!is.na(loan_df$Credit.Score), ]
+# Changing Variables to Numeric
+loan_df$Dependents <- as.numeric(loan_df$Dependents)
+loan_df$Dependents[is.na(loan_df$Dependents)] <- 0
+loan_df$Total_Income <- as.numeric(gsub('[$,]', '', loan_df$Total_Income))
 
-# Removing loans with Credit Scores of over 850
-loan_df <- loan_df[!loan_df$Credit.Score > 850, ]
-
-# Removing loans with Current Amount of $99999999
-loan_df <- loan_df[!loan_df$Current.Loan.Amount == 99999999, ]
+# Editing NA values
+loan_df <- loan_df[!is.na(loan_df$Credit_History), ]
+loan_df <- loan_df[!is.na(loan_df$LoanAmount), ]
+loan_df <- loan_df[!is.na(loan_df$Loan_Amount_Term), ]
 
 # Checking to see if all Missing Values has been removed
 summary(loan_df)
@@ -90,104 +83,102 @@ summary(pca.cor)
 pov.cor <- pca.cor$sdev^2 / sum(pca.cor$sdev^2)
 barplot(pov.cor, xlab = "Principal Components", ylab = "Proportion of Variance Explained")
 
-# Adjusting to PCA Normalization
-loan_df_adj <- subset(loan_df, select=-c(Number.of.Credit.Problems))
-loan_df_adj <- loan_df
+# Adjusting to Normalization
+min_max_norm <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
+
+# Apply Normalization to the data set
+loan_df_adj <- as.data.frame(lapply(loan_df, min_max_norm))
 
 # ===== Partitioning the Data =====
-train.index <- sample(c(1:dim(loan_df_adj)[1]), dim(loan_df_adj)[1] * 0.6)
+train.index <- sample(c(1:dim(loan_df_adj)[1]), dim(loan_df_adj)[1] * 0.60)
 
 train.df <- loan_df_adj[train.index, ]
 valid.df <- loan_df_adj[-train.index, ]
 
 # ===== Logistic Regression =====
 # Fit Model
-lm.fit <- glm(Term ~ ., data = train.df, family='binomial')
+lm.fit <- glm(Loan_Status ~ ., data = train.df, family='binomial')
 
 # Report Model
-library(jtools)
 summ(lm.fit)
 
 # Evaluate the Model - Training Set
 lm.pred.pro.train <- predict(lm.fit, train.df, type='response')
-lm.pred.train <- factor(ifelse(lm.pred.pro.train > 0.5, 1, 0))
-confusionMatrix(lm.pred.train, factor(train.df$Loan.Status), positive='1')
+lm.pred.train <- factor(ifelse(lm.pred.pro.train > 0.71, 1, 0))
+confusionMatrix(lm.pred.train, factor(train.df$Loan_Status), positive='1')
 
 # Evaluating the Model - Validation Set
 lm.pred.pro.valid <- predict(lm.fit, valid.df, type='response')
-lm.pred.valid <- factor(ifelse(lm.pred.pro.valid > 0.5, 1, 0))
-confusionMatrix(lm.pred.valid, factor(valid.df$Loan.Status), positive='1')
+lm.pred.valid <- factor(ifelse(lm.pred.pro.valid > 0.71, 1, 0))
+confusionMatrix(lm.pred.valid, factor(valid.df$Loan_Status), positive='1')
 
-# ===== Neural Network (STILL Work-In-Progress) =====
-library(neuralnet)
+# ===== Neural Network =====
 # Fit Model
-nn <- neuralnet(Term ~ ., data = train.df, hidden = 3)
+nn <- neuralnet(Loan_Status ~ ., data = train.df, hidden = 3)
 
 # report model
-library(NeuralNetTools)
 plotnet(nn)
 plot(nn)
 
 # evaluate model (training set)
 nn.pred.pro <- compute(nn, train.df)
-nn.pred <- factor(ifelse(nn.pred.pro$net.result > 0.5, 1, 0))
-confusionMatrix(as.factor(nn.pred), as.factor(train.df$Loan.Status), positive = '1')
+nn.pred <- factor(ifelse(nn.pred.pro$net.result > 0.62, 1, 0))
+confusionMatrix(as.factor(nn.pred), as.factor(train.df$Loan_Status), positive = '1')
 
 # evaluate model (validation set)
 nn.pred.pro.valid <- compute(nn, valid.df)
-nn.pred.valid <- factor(ifelse(nn.pred.pro.valid$net.result > 0.5, 1, 0))
-confusionMatrix(nn.pred.valid, factor(valid.df$Loan.Status), positive = '1')
+nn.pred.valid <- factor(ifelse(nn.pred.pro.valid$net.result > 0.62, 1, 0))
+confusionMatrix(nn.pred.valid, factor(valid.df$Loan_Status), positive = '1')
 
 
 # ===== Classification Tree =====
-library(rpart)
-library(rpart.plot)
-class.tree <- rpart(Term ~ ., data = loan_df_adj, method="class")
+class.tree <- rpart(Loan_Status ~ ., data = loan_df_adj, method="class")
 summary(class.tree)
 
 # Plot
 prp(class.tree, type=4, extra=101, box.palette="GnYlRd",
     fallen.leaves=TRUE, branch=0.3, split.font=1, varlen=-10, under=TRUE)
 
-library(rattle)
+# Fancy Rpart Plot
 fancyRpartPlot(class.tree)
 
 # Decision Rules
 rpart.rules(class.tree, extra=4, cover=TRUE)
 
 # Evaluate the Model
-library(gmodels)
 pred.loan <- predict(class.tree, loan_df_adj, type='class')
 pred.loan
 
-confusionMatrix(as.factor(pred.loan), as.factor(loan_df_adj$Term))
+confusionMatrix(as.factor(pred.loan), as.factor(loan_df_adj$Loan_Status), positive = '1')
 
-# ===== K-Nearest Neighbor (STILL Work-In-Progress) =====
-library(class)
+# ===== Random Forest =====
+#Fit random forest model
+rf <- randomForest(as.factor(Loan_Status) ~ ., data = train.df, ntree = 1000, 
+                   mtry = 2, nodesize = 5, importance = TRUE)
+
+#Plot Mean Decrease Accuracy
+varImpPlot(rf, type = 1)
+
+#Predict validation data
+rf.pred <- predict(rf, valid.df)
+
+#Generate confusion matrix
+confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Loan_Status), positive = '1')
+
+# ===== K-Nearest Neighbor =====
 # run kNN with k=5
-nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan.Status), k=5)
-confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan.Status))
+nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=5)
+confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
 
 # Find optimal K (from 1 to 15) in terms of accuracy
 accuracy.df <- data.frame(k=seq(1, 15, 1), accuracy=0)
+
 for(i in 1:15){
-  knn.pred <- knn(train.df, valid.df, cl=as.factor(train.df$Loan.Status), k=i)
+  knn.pred <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=i)
   accuracy.df[i, 'accuracy'] <- confusionMatrix(knn.pred, 
-                                                as.factor(valid.df$Loan.Status))$overall[1]
+                                                as.factor(valid.df$Loan_Status))$overall[1]
 }
 
 View(accuracy.df)
-
-# ===== Random Forest =====
-#install.packages("randomForest")
-library(randomForest)
-
-#Fit random forest model
-rf <- randomForest(as.factor(Loan.Status) ~ ., data = train.df, ntree = 1000, 
-                   mtry = 2, nodesize = 5, importance = TRUE)
-#Plot Mean Decrease Accuracy
-varImpPlot(rf, type = 1)
-#Predict validation data
-rf.pred <- predict(rf, valid.df)
-#Generate confusion matrix
-confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Loan.Status))
