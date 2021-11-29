@@ -132,6 +132,18 @@ nn.pred.pro.valid <- compute(nn, valid.df)
 nn.pred.valid <- factor(ifelse(nn.pred.pro.valid$net.result > 0.62, 1, 0))
 confusionMatrix(nn.pred.valid, factor(valid.df$Loan_Status), positive = '1')
 
+# Create de-normalization function
+# Extra Material: Talk on the Paper regarding De-Normalization v. Normalized Results
+de_normalize = function(x, original){
+  return (x * (max(original) - min(original)) + min(original))
+}
+
+nn.pred = de_normalize(nn.pred.pro.valid$net.result, valid.df$Loan_Status)
+nn.pred = factor(ifelse(nn.pred > 0.62, "1", "0"), levels = c('1','0'))
+nn.actual = factor(valid.df$Loan_Status, levels = c('1','0'))
+
+#Confusion matrix for nn test set
+confusionMatrix(nn.pred, nn.actual)
 
 # ===== Classification Tree =====
 class.tree <- rpart(Loan_Status ~ ., data = loan_df_adj, method="class")
