@@ -114,6 +114,7 @@ summary(pca.cor)
 pov.cor <- pca.cor$sdev^2 / sum(pca.cor$sdev^2)
 barplot(pov.cor, xlab = "Principal Components", ylab = "Proportion of Variance Explained")
 
+# Normalization ====
 # Adjusting to Normalization
 min_max_norm <- function(x) {
   (x - min(x)) / (max(x) - min(x))
@@ -177,7 +178,7 @@ nn.actual = factor(valid.df$Loan_Status, levels = c('1','0'))
 confusionMatrix(nn.pred, nn.actual)
 
 # ===== Classification Tree =====
-class.tree <- rpart(Loan_Status ~ ., data = loan_df_adj, method="class")
+class.tree <- rpart(Loan_Status ~ ., data = train.df, method="class")
 summary(class.tree)
 
 # Plot
@@ -190,11 +191,15 @@ fancyRpartPlot(class.tree)
 # Decision Rules
 rpart.rules(class.tree, extra=4, cover=TRUE)
 
-# Evaluate the Model
-pred.loan <- predict(class.tree, loan_df_adj, type='class')
-pred.loan
+# Evaluate model w/ train set
+pred.loan.train <- predict(class.tree, train.df, type='class')
 
-confusionMatrix(as.factor(pred.loan), as.factor(loan_df_adj$Loan_Status), positive = '1')
+confusionMatrix(as.factor(pred.loan.train), as.factor(train.df$Loan_Status), positive = '1')
+
+# Evaluate model w/ test set
+pred.loan.test <- predict(class.tree, valid.df, type='class')
+
+confusionMatrix(as.factor(pred.loan.test), as.factor(valid.df$Loan_Status), positive = '1')
 
 # ===== Random Forest =====
 #Fit random forest model
@@ -204,15 +209,21 @@ rf <- randomForest(as.factor(Loan_Status) ~ ., data = train.df, ntree = 1000,
 #Plot Mean Decrease Accuracy
 varImpPlot(rf, type = 1)
 
-#Predict validation data
-rf.pred <- predict(rf, valid.df)
+#predict Test Data
+rf.pred.train <- predict(rf, train.df)
 
 #Generate confusion matrix
-confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Loan_Status), positive = '1')
+confusionMatrix(as.factor(rf.pred.train), as.factor(train.df$Loan_Status), positive = '1')
+
+#Predict validation data
+rf.pred.test <- predict(rf, valid.df)
+#Generate confusion matrix
+confusionMatrix(as.factor(rf.pred.test), as.factor(valid.df$Loan_Status), positive = '1')
+
 
 # ===== K-Nearest Neighbor =====
 # run kNN with k=5
-nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=5)
+nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=16)
 confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
 
 # Find optimal K (from 1 to 15) in terms of accuracy
