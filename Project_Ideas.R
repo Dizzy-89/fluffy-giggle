@@ -25,6 +25,28 @@ loan_df <- read.csv("df1_loan.csv", fileEncoding="UTF-8-BOM")
 # Exploring the variables
 summary(loan_df)
 
+distribution <- table(loan_df$Gender)
+barplot(distribution)
+
+distribution <- table(loan_df$Married)
+barplot(distribution)
+
+distribution <- table(loan_df$Education)
+barplot(distribution)
+
+distribution <- table(loan_df$Self_Employed)
+barplot(distribution)
+
+distribution <- table(loan_df$Property_Area)
+barplot(distribution)
+
+distribution <- table(loan_df$Loan_Status)
+barplot(distribution)
+
+hist(loan_df$LoanAmount)
+hist(loan_df$ApplicantIncome)
+
+
 # ===== Configuring the Data =====
 # Sub-setting: Removing unneeded Categories
 loan_df <- subset(loan_df, select=-c(X, Loan_ID))
@@ -58,8 +80,17 @@ loan_df <- loan_df[!is.na(loan_df$Credit_History), ]
 loan_df <- loan_df[!is.na(loan_df$LoanAmount), ]
 loan_df <- loan_df[!is.na(loan_df$Loan_Amount_Term), ]
 
-# Checking to see if all Missing Values has been removed
+# Checking to see if all Missing Values have been removed
 summary(loan_df)
+
+boxplot(LoanAmount ~ Loan_Status,data=loan_df, main="Loan Amount",
+        xlab="1 For Loan Approval", ylab="Loan Amount")
+boxplot(ApplicantIncome ~ Loan_Status,data=loan_df, main="Loan Amount",
+        xlab="1 For Loan Approval", ylab="Loan Amount")
+boxplot(Total_Income ~ Loan_Status,data=loan_df, main="Loan Amount",
+        xlab="1 For Loan Approval", ylab="Loan Amount")
+
+
 
 # ===== Principal Component Analysis (PCA) =====
 cov(na.omit(loan_df))
@@ -194,3 +225,5 @@ for(i in 1:15){
 }
 
 View(accuracy.df)
+
+
