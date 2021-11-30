@@ -18,6 +18,7 @@ library(rattle)
 library(gmodels)
 library(randomForest)
 library(class)
+library(uplift)
 
 # Loading Data set
 loan_df <- read.csv("df1_loan.csv", fileEncoding="UTF-8-BOM")
@@ -46,7 +47,6 @@ barplot(distribution)
 hist(loan_df$LoanAmount, main="Loan Amount",
      xlab="Dollar Amount", ylab="Frequency" )
 hist(loan_df$ApplicantIncome)
-
 
 # ===== Configuring the Data =====
 # Sub-setting: Removing unneeded Categories
@@ -122,7 +122,7 @@ min_max_norm <- function(x) {
 # Apply Normalization to the data set
 loan_df_adj <- as.data.frame(lapply(loan_df, min_max_norm))
 
-#Normalized Data Visualizations
+# Normalized Data Visualizations
 hist(loan_df_adj$LoanAmount, main="Loan Amount",
      xlab="Dollar Amount", ylab="Frequency" )
 
@@ -223,6 +223,58 @@ rf.pred.test <- predict(rf, valid.df)
 #Generate confusion matrix
 confusionMatrix(as.factor(rf.pred.test), as.factor(valid.df$Loan_Status), positive = '1')
 
+# use upliftRF to apply a Random Forest.
+up.fit <- upliftRF(Loan_Status ~ Total_Income + Married + Dependents + Education 
+                   + Self_Employed + ApplicantIncome + CoapplicantIncome + LoanAmount 
+                   + Loan_Amount_Term + Credit_History + Property_Area + trt(Gender),
+                   data = train.df, mtry = 3, ntree = 100, split_method = "KL",
+                   minsplit = 200, verbose = TRUE)
+
+levels(train.df$Loan_Status) <- levels(train.df$Loan_Status)
+pred <- predict(up.fit, newdata = valid.df)
+
+# first colunm: p(y | treatment) 
+# second colunm: p(y | control) 
+
+head(data.frame(pred, "uplift" = pred[,1] - pred[,2]))
+
+# ===== Ensembles =====
+# Prediction: Random Forest
+rf.pred <- predict(rf, valid.df, type='response')
+rf.pred.prob <- predict(rf, valid.df,type="prob")
+confusionMatrix(as.factor(rf.pred), as.factor(valid.df$Loan_Status), positive = '1')
+
+# Prediction: Logistic Regression
+lr.pred.prob <- predict(lm.fit, valid.df, type ="response")
+lr.pred <-ifelse(lr.pred.prob > 0.5, 1, 0)
+confusionMatrix(as.factor(lr.pred), as.factor(valid.df$Loan_Status), positive = '1')
+
+# Prediction: Neural Network
+nn.pred.results <- compute(nn, valid.df)
+nn.pred.prob<-nn.pred.results$net.result
+nn.pred <-ifelse(nn.pred.prob > 0.5, 1, 0)
+confusionMatrix(as.factor(nn.pred), as.factor(valid.df$Loan_Status), positive = '1')
+
+# Ensemble using Averaging
+valid.df$pred_avg<-(rf.pred.prob[,2]+lr.pred.prob+nn.pred.prob)/3
+valid.df$pred_avg_class<-ifelse(valid.df$pred_avg>0.5,1,0)
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(valid.df$pred_avg_class))
+
+# Ensemble using Majority Voting
+valid.df$pred_vote_class<-ifelse(rf.pred==1 & nn.pred==1,1,
+                                 ifelse(rf.pred==1 & lr.pred==1,1,
+                                        ifelse(lr.pred==1 & nn.pred==1,1,0)))
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(valid.df$pred_vote_class))
+
+# Ensemble using Weighted Averaging
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(rf.pred))
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(lr.pred))
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(nn.pred))
+
+valid.df$pred_weighted<-(rf.pred.prob[,2]*0.25)+
+  (lr.pred.prob*0.5)+(nn.pred*0.5)
+valid.df$pred_weighted_class<-ifelse(valid.df$pred_weighted>0.5,1,0)
+confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(valid.df$pred_weighted_class))
 
 # ===== K-Nearest Neighbor =====
 # run kNN with k=16
