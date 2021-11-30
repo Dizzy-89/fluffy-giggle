@@ -214,7 +214,6 @@ varImpPlot(rf, type = 1)
 
 #predict Test Data
 rf.pred.train <- predict(rf, train.df)
-
 #Generate confusion matrix
 confusionMatrix(as.factor(rf.pred.train), as.factor(train.df$Loan_Status), positive = '1')
 
