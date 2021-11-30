@@ -204,6 +204,25 @@ pred.loan.test <- predict(class.tree, valid.df, type='class')
 
 confusionMatrix(as.factor(pred.loan.test), as.factor(valid.df$Loan_Status), positive = '1')
 
+# ===== K-Nearest Neighbor =====
+# run kNN with k=16
+nn16 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=16)
+confusionMatrix(as.factor(nn16), as.factor(valid.df$Loan_Status), positive = '1')
+
+# Find optimal K (from 1 to 15) in terms of accuracy
+accuracy.df <- data.frame(k=seq(1, 15, 1), accuracy=0)
+
+for(i in 1:15){
+  knn.pred <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=i)
+  accuracy.df[i, 'accuracy'] <- confusionMatrix(knn.pred, 
+                                                as.factor(valid.df$Loan_Status))$overall[1]
+}
+
+View(accuracy.df)
+
+# run kNN with k=5
+nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=5)
+confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
 # ===== Random Forest =====
 #Fit random forest model
 rf <- randomForest(as.factor(Loan_Status) ~ ., data = train.df, ntree = 1000, 
@@ -275,22 +294,4 @@ valid.df$pred_weighted<-(rf.pred.prob[,2]*0.25)+
 valid.df$pred_weighted_class<-ifelse(valid.df$pred_weighted>0.5,1,0)
 confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(valid.df$pred_weighted_class))
 
-# ===== K-Nearest Neighbor =====
-# run kNN with k=16
-nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=16)
-confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
 
-# Find optimal K (from 1 to 15) in terms of accuracy
-accuracy.df <- data.frame(k=seq(1, 15, 1), accuracy=0)
-
-for(i in 1:15){
-  knn.pred <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=i)
-  accuracy.df[i, 'accuracy'] <- confusionMatrix(knn.pred, 
-                                                as.factor(valid.df$Loan_Status))$overall[1]
-}
-
-View(accuracy.df)
-
-# run kNN with k=5
-nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=5)
-confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
