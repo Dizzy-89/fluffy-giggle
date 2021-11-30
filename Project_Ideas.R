@@ -114,7 +114,7 @@ summary(pca.cor)
 pov.cor <- pca.cor$sdev^2 / sum(pca.cor$sdev^2)
 barplot(pov.cor, xlab = "Principal Components", ylab = "Proportion of Variance Explained")
 
-# Normalization ====
+# ===== Normalization ====
 # Adjusting to Normalization
 min_max_norm <- function(x) {
   (x - min(x)) / (max(x) - min(x))
@@ -222,7 +222,7 @@ confusionMatrix(as.factor(rf.pred.test), as.factor(valid.df$Loan_Status), positi
 
 
 # ===== K-Nearest Neighbor =====
-# run kNN with k=5
+# run kNN with k=16
 nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=16)
 confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
 
@@ -237,4 +237,6 @@ for(i in 1:15){
 
 View(accuracy.df)
 
-
+# run kNN with k=5
+nn5 <- knn(train.df, valid.df, cl=as.factor(train.df$Loan_Status), k=5)
+confusionMatrix(as.factor(nn5), as.factor(valid.df$Loan_Status), positive = '1')
