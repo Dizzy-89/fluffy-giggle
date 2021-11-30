@@ -43,7 +43,8 @@ barplot(distribution)
 distribution <- table(loan_df$Loan_Status)
 barplot(distribution)
 
-hist(loan_df$LoanAmount)
+hist(loan_df$LoanAmount, main="Loan Amount",
+     xlab="Dollar Amount", ylab="Frequency" )
 hist(loan_df$ApplicantIncome)
 
 
@@ -90,8 +91,6 @@ boxplot(ApplicantIncome ~ Loan_Status,data=loan_df, main="Loan Amount",
 boxplot(Total_Income ~ Loan_Status,data=loan_df, main="Loan Amount",
         xlab="1 For Loan Approval", ylab="Loan Amount")
 
-
-
 # ===== Principal Component Analysis (PCA) =====
 cov(na.omit(loan_df))
 cor(na.omit(loan_df))
@@ -122,6 +121,10 @@ min_max_norm <- function(x) {
 
 # Apply Normalization to the data set
 loan_df_adj <- as.data.frame(lapply(loan_df, min_max_norm))
+
+#Normalized Data Visualizations
+hist(loan_df_adj$LoanAmount, main="Loan Amount",
+     xlab="Dollar Amount", ylab="Frequency" )
 
 # ===== Partitioning the Data =====
 train.index <- sample(c(1:dim(loan_df_adj)[1]), dim(loan_df_adj)[1] * 0.60)
