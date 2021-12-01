@@ -46,11 +46,12 @@ barplot(distribution)
 
 hist(loan_df$LoanAmount, main="Loan Amount",
      xlab="Dollar Amount", ylab="Frequency" )
+
 hist(loan_df$ApplicantIncome)
 
 # ===== Configuring the Data =====
 # Sub-setting: Removing unneeded Categories
-loan_df <- subset(loan_df, select=-c(X, Loan_ID))
+loan_df <- subset(loan_df, select=-c(X, Loan_ID,ApplicantIncome, CoapplicantIncome))
 
 # Converting Categorical Variables into Dummy Variables:
 # 1 = Male; 0 = Female
@@ -294,4 +295,6 @@ valid.df$pred_weighted<-(rf.pred.prob[,2]*0.25)+
 valid.df$pred_weighted_class<-ifelse(valid.df$pred_weighted>0.5,1,0)
 confusionMatrix(as.factor(valid.df$Loan_Status),as.factor(valid.df$pred_weighted_class))
 
+#Corr Matrix
+round(cor(l),digits = 2)
 
